@@ -1,8 +1,8 @@
-# Directive Maître : Génération d'un Microservice via un Template Configurable
+# Directive Maître : Génération d'un Microservice via un Template Configurable (v3 - Final)
 
 ## 1. OBJECTIF
 
-Générer la structure complète et le code boilerplate pour un nouveau microservice, en utilisant les paramètres de configuration ci-dessous. Le résultat doit être un ensemble de 7 projets C# prêts à être compilés et intégrés dans l'écosystème `SampleFluxProject`.
+Générer la structure complète et le code boilerplate pour un nouveau microservice, en utilisant les paramètres de configuration ci-dessous. Le résultat doit être une solution .NET 8 prête à être compilée et intégrée dans l'écosystème `SampleFluxProject`.
 
 ---
 
@@ -15,62 +15,88 @@ Générer la structure complète et le code boilerplate pour un nouveau microser
 
 ---
 
-## 3. STRUCTURE DE LA SOLUTION (LES 7 COUCHES)
+## 3. STRUCTURE ET DÉPENDANCES DE LA SOLUTION
 
-Tu dois générer une solution (`.sln`) contenant les 7 projets C# suivants. Remplace `[SERVICE_NAME]` par sa valeur.
+Génère une solution (`.sln`) avec les 7 projets C# suivants. Chaque projet doit cibler **.NET 8.0** (`<TargetFramework>net8.0</TargetFramework>`).
 
-1.  **`CBS.[SERVICE_NAME].API`**: Projet ASP.NET Core API.
-2.  **`CBS.[SERVICE_NAME].MediatR`**: Bibliothèque de classes .NET pour la logique métier.
-3.  **`CBS.[SERVICE_NAME].Domain`**: Bibliothèque de classes .NET pour le DbContext et les migrations.
-4.  **`CBS.[SERVICE_NAME].Data`**: Bibliothèque de classes .NET pour les Entities et DTOs.
-5.  **`CBS.[SERVICE_NAME].Repository`**: Bibliothèque de classes .NET pour l'implémentation des repositories.
-6.  **`CBS.[SERVICE_NAME].Common`**: Bibliothèque de classes .NET pour les interfaces de persistance.
-7.  **`CBS.[SERVICE_NAME].Helper`**: Bibliothèque de classes .NET pour les utilitaires.
+### 1. `CBS.[SERVICE_NAME].API`
+-   **Type**: Projet `Microsoft.NET.Sdk.Web`.
+-   **Références de Projet**: Doit référencer les 6 autres projets de la solution.
+-   **Paquets NuGet**:
+    -   `AutoMapper.Extensions.Microsoft.DependencyInjection` (v12.0.1)
+    -   `FluentValidation.AspNetCore` (v11.3.0)
+    -   `MediatR.Extensions.Microsoft.DependencyInjection` (v11.1.0)
+    -   `Microsoft.AspNetCore.Authentication.JwtBearer` (v7.0.11)
+    -   `Microsoft.EntityFrameworkCore.Design` (v7.0.13)
+    -   `NLog.Web.AspNetCore` (v5.3.5)
+    -   `Swashbuckle.AspNetCore` (v6.5.0)
+
+### 2. `CBS.[SERVICE_NAME].MediatR`
+-   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
+-   **Références de Projet**: `.Data`, `.Domain`, `.Repository`.
+-   **Paquets NuGet**:
+    -   `AutoMapper` (v12.0.1)
+    -   `FluentValidation` (v11.8.0)
+    -   `MediatR` (v12.1.1)
+    -   `Newtonsoft.Json` (v13.0.3)
+
+### 3. `CBS.[SERVICE_NAME].Domain`
+-   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
+-   **Références de Projet**: `.Data`.
+-   **Paquets NuGet**:
+    -   `Microsoft.EntityFrameworkCore.SqlServer` (v7.0.13)
+
+### 4. `CBS.[SERVICE_NAME].Data`
+-   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
+-   **Références de Projet**: `.Helper`.
+-   **Paquets NuGet**:
+    -   `MediatR` (v12.1.1) - *Note: Dépendance inhabituelle mais présente dans le modèle.*
+
+### 5. `CBS.[SERVICE_NAME].Repository`
+-   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
+-   **Références de Projet**: `.Common`, `.Data`, `.Domain`.
+-   **Paquets NuGet**: Aucun.
+
+### 6. `CBS.[SERVICE_NAME].Common`
+-   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
+-   **Références de Projet**: `.Data`.
+-   **Paquets NuGet**:
+    -   `Microsoft.EntityFrameworkCore` (v7.0.13)
+    -   `MongoDB.Driver` (v3.1.0) - *Pour le pattern de persistance hybride.*
+
+### 7. `CBS.[SERVICE_NAME].Helper`
+-   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
+-   **Références de Projet**: `.Data`, et le projet partagé `CBS.APICaller.Helper`.
+-   **Paquets NuGet**:
+    -   `ClosedXML` (v0.102.2)
+    -   `EPPlus` (v7.0.0)
+    -   `Microsoft.AspNetCore.Http.Abstractions` (v2.2.0)
 
 ---
 
-## 4. FONDATIONS ARCHITECTURALES (GÉNÉRATION DE CODE)
+## 4. FONDATIONS ARCHITECTURALES (CODE BOILERPLATE REQUIS)
 
-Génère les fichiers suivants dans les projets correspondants.
-
--   **Dans `.Data`**:
-    -   **`BaseEntity.cs`**: Doit contenir `Id`, `CreatedBy`, `CreatedDate`, `ModifiedBy`, `LastModifiedDate`, `IsDeleted`.
-    -   Crée une entité principale `public class [PRIMARY_ENTITY_NAME] : BaseEntity { ... }`.
-
--   **Dans `.Helper`**:
-    -   **`ServiceResponse<T>`**: Implémentation standard avec des méthodes Factory (`ReturnSuccess`, `Return409`, etc.).
-    -   **`APICallHelper.cs`**, **`PathHelper.cs`**, **`BaseUtilities.cs`**, **`PinSecurity.cs`**, **`PagedList.cs`**.
-
--   **Dans `.Common`**:
-    -   **`IGenericRepository.cs`** et **`IUnitOfWork.cs`**.
-    -   **Optionnel (si MongoDB est requis)**: Crée un dossier `MongoDBContext` avec `IMongoUnitOfWork.cs` et `IMongoGenericRepository.cs`.
-
--   **Dans `.Repository` (ou `.Common`)**:
-    -   **`GenericRepository.cs`**: Doit implémenter le **soft delete**.
-    -   **`UnitOfWork.cs`**: Doit surcharger `SaveChanges()` pour **peupler automatiquement les champs d'audit**.
-
--   **Dans `.API/Controllers/Base`**:
-    -   **`BaseController.cs`**: Doit contenir la méthode `ReturnFormattedResponse`.
-
--   **Dans `.MediatR/PipeLineBehavior`**:
-    -   **`ValidationBehavior.cs`**: Doit implémenter `IPipelineBehavior<,>` et utiliser `FluentValidation`.
+Génère les fichiers suivants avec leur logique standard (soft-delete, audit automatique, etc.) comme analysé précédemment.
+-   `BaseEntity.cs` (dans `.Data`)
+-   `ServiceResponse<T>` (dans `.Helper`)
+-   `BaseController.cs` (dans `.API/Controllers/Base`)
+-   `ValidationBehavior.cs` (dans `.MediatR/PipeLineBehavior`)
+-   `IGenericRepository.cs`, `IUnitOfWork.cs`, `IMongoUnitOfWork.cs` (dans `.Common`)
+-   Leurs implémentations concrètes dans `.Repository` ou `.Common`.
+-   Les classes utilitaires standards (`APICallHelper`, `PathHelper`, etc.) dans `.Helper`.
 
 ---
 
 ## 5. CONFIGURATION `Startup.cs` (API)
 
-Génère un `Startup.cs` configuré pour :
-1.  **DI Container**: Enregistrer le `[SERVICE_NAME]Context`, MediatR, AutoMapper, FluentValidation. Utilise une méthode d'extension `services.AddDependencyInjection()`.
-2.  **Base de Données**: Configurer la connexion à la base de données `[DATABASE_NAME]`.
-3.  **JWT Bearer Auth**: Configurer l'authentification JWT.
-4.  **Pipeline de Middlewares (Ordre Critique)**: `UseRouting`, `UseAuthentication`, `UseMiddleware<JWTMiddleware>`, `UseMiddleware<AuditLogMiddleware>`, `UseAuthorization`, `UseEndpoints`.
+Génère un `Startup.cs` qui configure le conteneur DI et le pipeline de middlewares dans l'ordre critique (`Authentication` -> `JWTMiddleware` -> `Authorization`).
 
 ---
 
 ## 6. TÂCHE DE VALIDATION AUTOMATIQUE
 
-Pour valider la génération, crée une fonctionnalité `[PRIMARY_ENTITY_NAME]` de base :
-1.  Ajoute les `DbSet` nécessaires au `[SERVICE_NAME]Context`.
-2.  Crée un `Add[PRIMARY_ENTITY_NAME]Command` et son `Add[PRIMARY_ENTITY_NAME]CommandHandler`.
-3.  Crée un `[SERVICE_NAME_PLURAL]Controller` avec une action `POST` sécurisée par `[Authorize]` qui déclenche la commande.
-4.  Le test final consiste à appeler cet endpoint avec un token JWT valide et à vérifier que l'entité est créée dans la base de données avec les champs d'audit (`CreatedBy`, `CreatedDate`) correctement renseignés.
+Pour valider le template, génère une fonctionnalité de base pour `[PRIMARY_ENTITY_NAME]` :
+1.  Crée l'entité `[PRIMARY_ENTITY_NAME]` héritant de `BaseEntity`.
+2.  Crée `Add[PRIMARY_ENTITY_NAME]Command` et son `Add[PRIMARY_ENTITY_NAME]CommandHandler`.
+3.  Crée un `[SERVICE_NAME_PLURAL]Controller` avec une action `POST` sécurisée par `[Authorize]`.
+4.  Le test final consiste à appeler cet endpoint avec un token JWT valide et à vérifier que l'entité est créée dans la BDD avec les champs d'audit (`CreatedBy`, `CreatedDate`) correctement renseignés.
