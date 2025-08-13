@@ -67,12 +67,12 @@ L'analyse des services (`CustomerManagement`, `AccountManagement`, etc.) révèl
 -   **Rôle Métier**: Référentiel de la **structure organisationnelle et géographique** de la banque.
 -   **Entités Clés**: `Bank`, `Branch`, `BankingZone`, `Country`, `Currency`, `ThirdPartyInstitution`, `DocumentUploaded`.
 -   **Logique Spécifique**: Utilise une **persistance hybride**. La relation entre les agences et les zones (`BankZoneBranch`) est stockée dans **MongoDB**, tandis que le reste est dans SQL Server.
--   **Dépendances**: `IdentityServer`, `CustomerManagement`.
+-   **Dépendances**: `IdentityServer`, `CustomerManagement`, `AuditTrail`.
 
 ### 3. `BudgetManagement`
 -   **Rôle Métier**: Gestion des **budgets d'entreprise** et suivi des dépenses.
 -   **Entités Clés**: `FiscalYear`, `BudgetPlan`, `BudgetItem`, `Expenditure`, `SpendingLimit`.
--   **Logique Spécifique**: `AddExpenditureCommandHandler` est étonnamment simple. Il enregistre les dépenses mais **ne valide pas** si elles dépassent le budget alloué, ce qui suggère un système de *suivi* budgétaire plutôt que d'application stricte du budget.
+-   **Logique Spécifique**: `AddExpenditureCommandHandler` enregistre les dépenses mais **ne valide pas** si elles dépassent le budget alloué, ce qui suggère un système de *suivi* budgétaire plutôt que d'application stricte.
 -   **Dépendances**: `AuditTrail`, `BankManagement`, `DocumentManagement`.
 
 ### 4. `CommunicationManagement`
@@ -84,40 +84,41 @@ L'analyse des services (`CustomerManagement`, `AccountManagement`, etc.) révèl
 ### 5. `CustomerManagement`
 -   **Rôle Métier**: **CRM** et système de gestion des "parties" (individus, groupes, employés).
 -   **Entités Clés**: `Customer`, `Group`, `Organization`, `Employee`, `PhoneNumberChangeHistory`, `UploadedCustomerWithError`.
--   **Logique Spécifique**: Le `UploadCustomerFileCommandHandler` est un moteur d'importation de données robuste qui utilise `NPOI` pour parser des fichiers Excel, délègue la création via MediatR, et possède une logique de **nettoyage de données et de nouvelles tentatives** en cas d'échec.
+-   **Logique Spécifique**: Le `UploadCustomerFileCommandHandler` est un moteur d'importation de données robuste qui utilise `NPOI` pour parser des fichiers Excel et possède une logique de **nettoyage de données et de nouvelles tentatives** en cas d'échec.
 -   **Dépendances**: `IdentityServer`, `AuditTrail`, `AccountManagement`.
 
 ### 6. `DailyCollectionManagement`
 -   **Rôle Métier**: Gestion d'un réseau d'agents de collecte.
--   **Analyse**: Ce service est un **placeholder ou est incomplet**. Il n'a pas de contrôleurs implémentés ni de logique métier significative. Ses entités (`Agent`, etc.) ne sont même pas enregistrées dans son `DbContext`.
+-   **Analyse**: Ce service est un **placeholder ou est incomplet**. Il n'a pas de contrôleurs implémentés ni de logique métier significative.
+-   **Dépendances**: Aucune identifiée.
 
 ### 7. `FixedAssetsManagement`
 -   **Rôle Métier**: Gestion du cycle de vie des **immobilisations** de l'entreprise.
 -   **Entités Clés**: `Asset`, `AssetType`, `Location`, `DepreciationMethod`, `DepreciationEntry`, `AssetTransfer`, `AssetDisposal`.
--   **Logique Spécifique**: Le `AddDepreciationEntryCommandHandler` **ne calcule pas** la dépréciation. Il reçoit le montant calculé en paramètre. Cela implique que la logique de calcul financier complexe est effectuée par un **processus externe** (par exemple, un batch de fin de mois), et ce service agit comme un simple système d'enregistrement (CRUD).
+-   **Logique Spécifique**: Le `AddDepreciationEntryCommandHandler` **ne calcule pas** la dépréciation ; il reçoit le montant en paramètre. La logique de calcul est donc externe à ce service.
 -   **Dépendances**: `AuditTrail`, `BankManagement`, `DocumentManagement`.
 
 ### 8. `LoanManagement`
 -   **Rôle Métier**: Gestion du cycle de vie complet d'un **prêt**, de la demande à la radiation.
 -   **Entités Clés**: `LoanProduct`, `LoanApplication`, `Loan`, `LoanAmortization`, `Refund`, `LoanCommiteeGroup`, `Collateral`.
--   **Logique Spécifique**: La logique de calcul financier est encapsulée dans une classe helper statique, `LoanCalculator`. Le `AddLoanAmortizationHandler` délègue à cette classe la tâche complexe de générer le tableau d'amortissement.
--   **Dépendances**: `AccountManagement`, `CustomerManagement`, `CommunicationManagement`, `IdentityServer`, `AuditTrail`.
+-   **Logique Spécifique**: La logique de calcul financier complexe est encapsulée dans une classe helper statique, `LoanCalculator`.
+-   **Dépendances**: `AccountManagement`, `CustomerManagement`, `CommunicationManagement`, `TransactionManagement`, `IdentityServer`, `AuditTrail`.
 
 ### 9. `SystemConfiguration`
 -   **Rôle Métier**: Gestion des **données de référence géographiques** (`Country`, `Region`, `Town`, etc.).
--   **Logique Spécifique**: Service CRUD simple. Sa "logique" principale réside dans les relations hiérarchiques et les contraintes définies dans `OnModelCreating` de son `DbContext`.
+-   **Logique Spécifique**: Service CRUD simple.
 -   **Dépendances**: `AuditTrail`, `BankManagement`, `TransactionManagement`, `DocumentManagement`.
 
 ### 10. `TransactionManagement`
--   **Rôle Métier**: **Orchestrateur des Opérations Financières**. Il gère le cycle de vie de toutes les transactions (transferts, dépôts, etc.), applique les frais et les politiques.
--   **Entités Clés**: `Transaction`, `Teller`, `Vault`, `ReversalRequest`, et une multitude d'entités `...Parameter` qui définissent les règles métier (ex: `WithdrawalParameter`).
--   **Logique Spécifique**: Le `AddRemittanceHandler` est un excellent exemple. Il recherche les politiques de frais, calcule et répartit les commissions entre les agences et le siège social en fonction des pourcentages configurés.
+-   **Rôle Métier**: **Orchestrateur des Opérations Financières**. Il gère le cycle de vie de toutes les transactions, applique les frais et les politiques.
+-   **Entités Clés**: `Transaction`, `Teller`, `Vault`, `ReversalRequest`, et une multitude d'entités `...Parameter` qui définissent les règles métier.
+-   **Logique Spécifique**: Le `AddRemittanceHandler` recherche les politiques de frais, calcule et répartit les commissions entre les agences et le siège.
 -   **Dépendances**: `AccountManagement`, `CustomerManagement`, `LoanManagement`, `CommunicationManagement`, `BankManagement`, `IdentityServer`, `AuditTrail`.
 
 ### 11. `UserServiceManagement`
--   **Rôle Métier**: **IAM (Identity and Access Management)** pour les utilisateurs internes (le personnel).
--   **Entités Clés**: `User` (avec des champs comme `FirstName`, `Email`, `Role`).
--   **Logique Spécifique**: Service CRUD très simple. L'authentification réelle est déléguée à un `IdentityServer` externe ; ce service agit probablement comme le "magasin d'utilisateurs" pour ce serveur.
+-   **Rôle Métier**: **IAM (Identity and Access Management)** pour les utilisateurs internes.
+-   **Entités Clés**: `User` (avec `FirstName`, `Email`, `Role`).
+-   **Logique Spécifique**: Service CRUD simple qui sert de magasin d'utilisateurs pour un `IdentityServer` externe.
 -   **Dépendances**: `AuditTrail`, `BankManagement`, `TransactionManagement`, `DocumentManagement`.
 
 ---
@@ -127,7 +128,15 @@ L'analyse des services (`CustomerManagement`, `AccountManagement`, etc.) révèl
 ### 1. Cartographie Complète des Interactions
 
 ```mermaid
-graph LR
+graph TD
+    subgraph Frontend/Clients
+        Client_App
+    end
+
+    subgraph Gateway
+        ApiGateway
+    end
+
     subgraph Core Services
         AccountManagement
         BankManagement
@@ -139,7 +148,6 @@ graph LR
         TransactionManagement
         UserServiceManagement
         CommunicationManagement
-        DailyCollectionManagement
     end
 
     subgraph Supporting Services
@@ -147,6 +155,19 @@ graph LR
         AuditTrailService
         DocumentManagement
     end
+
+    Client_App --> ApiGateway
+
+    ApiGateway --> AccountManagement
+    ApiGateway --> BankManagement
+    ApiGateway --> BudgetManagement
+    ApiGateway --> CustomerManagement
+    ApiGateway --> FixedAssetsManagement
+    ApiGateway --> LoanManagement
+    ApiGateway --> SystemConfiguration
+    ApiGateway --> TransactionManagement
+    ApiGateway --> UserServiceManagement
+    ApiGateway --> CommunicationManagement
 
     AccountManagement --> BankManagement
     AccountManagement --> TransactionManagement
@@ -176,8 +197,6 @@ graph LR
 
     AccountManagement --> IdentityServer
     BankManagement --> IdentityServer
-    CommunicationManagement --> IdentityServer
-    CustomerManagement --> IdentityServer
     LoanManagement --> IdentityServer
     TransactionManagement --> IdentityServer
 
@@ -196,7 +215,6 @@ graph LR
     BudgetManagement --> DocumentManagement
     FixedAssetsManagement --> DocumentManagement
     SystemConfiguration --> DocumentManagement
-    UserServiceManagement --> DocumentManagement
 ```
 
 ### 2. Analyse d'un Flux Métier Complexe : Création d'un Client
