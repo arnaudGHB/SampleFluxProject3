@@ -8,80 +8,207 @@ Ce document présente une analyse récursive et profonde de l'écosystème `Samp
 
 ### 1. Le "Génome" d'un Microservice Standard
 
-L'analyse du service `CustomerManagement` révèle une architecture à 7 couches cohérente et récurrente, construite sur des composants "boilerplate" fondamentaux.
+L'analyse des services (`CustomerManagement`, `AccountManagement`, etc.) révèle une architecture à 7 couches cohérente et récurrente, construite sur des composants "boilerplate" fondamentaux.
 
 - **`IGenericRepository.cs` / `GenericRepository.cs`**:
-    - **Rôle**: Fournit une abstraction standard pour les opérations CRUD (Create, Read, Update, Delete) sur les entités de la base de données.
-    - **Logique Clé**: Implémente une stratégie de **soft delete**. Les entités héritant de `BaseEntity` ne sont pas supprimées de la base de données, mais leur champ `IsDeleted` est mis à `true`. Utilise `AsNoTracking()` pour les lectures afin d'améliorer les performances.
-    - **Fichier**: `CoreServices/CustomerManagement/CBS.CUSTOMER.COMMON/GenericRespository/GenericRespository.cs`
+    - **Rôle**: Fournit une abstraction standard pour les opérations CRUD.
+    - **Logique Clé**: Implémente une stratégie de **soft delete** (`IsDeleted`) et utilise `AsNoTracking()` pour les lectures afin d'améliorer les performances.
 
 - **`IUnitOfWork.cs` / `UnitOfWork.cs`**:
-    - **Rôle**: Centralise la gestion des transactions de la base de données via le pattern Unit of Work, en s'assurant que les opérations sont atomiques.
-    - **Logique Clé**: Implémente un **mécanisme d'audit automatique**. Avant de sauvegarder les changements (`SaveChanges()`), il parcourt toutes les entités modifiées qui héritent de `BaseEntity` et peuple automatiquement les champs d'audit (`CreatedBy`, `CreatedDate`, `ModifiedBy`, `LastModifiedDate`). Il récupère l'identité de l'utilisateur actuel via un objet `UserInfoToken` injecté.
-    - **Fichier**: `CoreServices/CustomerManagement/CBS.CUSTOMER.COMMON/UnitOfWork/UnitOfWork.cs`
+    - **Rôle**: Centralise la gestion des transactions de la base de données.
+    - **Logique Clé**: Implémente un **mécanisme d'audit automatique**. Avant `SaveChanges()`, il peuple automatiquement les champs d'audit (`CreatedBy`, `CreatedDate`, etc.) en utilisant un `UserInfoToken` injecté pour récupérer l'identité de l'utilisateur.
 
 - **`ServiceResponse.cs`**:
-    - **Rôle**: Standardise la structure de toutes les réponses des méthodes de service et des endpoints d'API.
-    - **Logique Clé**: Utilise un pattern "Factory" (`ReturnSuccess`, `ReturnFailed`, `Return404`, etc.) pour créer des objets de réponse cohérents, encapsulant les données (`Data`), le statut, les messages et les erreurs. Ceci garantit un contrat d'API prédictible pour les clients. Ce fichier est copié dans le projet `Helper` de chaque microservice, privilégiant le découplage à la déduplication de code.
-    - **Fichier**: `CoreServices/CustomerManagement/CBS.CUSTOMER.HELPER/Helper/ServiceResponse.cs`
+    - **Rôle**: Standardise la structure de toutes les réponses d'API.
+    - **Logique Clé**: Utilise un pattern "Factory" (`ReturnSuccess`, `ReturnFailed`, etc.) pour créer des objets de réponse cohérents. Ce fichier est copié dans chaque microservice pour maximiser le découplage.
 
 - **`ValidationBehavior.cs`**:
-    - **Rôle**: Agit comme un pipeline MediatR pour intercepter et valider automatiquement les requêtes (Commandes/Queries) avant qu'elles n'atteignent leurs handlers.
-    - **Logique Clé**: Utilise `FluentValidation`. Si la validation échoue, il court-circuite la requête, ne l'envoie jamais au handler, et retourne immédiatement une `ServiceResponse` avec un statut `422 Unprocessable Entity` et les erreurs de validation. Cela garantit que la logique métier ne s'exécute que sur des données valides.
-    - **Fichier**: `CoreServices/CustomerManagement/CBS.CUSTOMER.MEDIATR/PipeLineBehavior/ValidationBehavior.cs`
+    - **Rôle**: Pipeline MediatR pour valider automatiquement les requêtes avant qu'elles n'atteignent leurs handlers.
+    - **Logique Clé**: Utilise `FluentValidation`. En cas d'échec, il court-circuite la requête et retourne une `ServiceResponse` avec un statut `422`.
 
 - **`BaseController.cs`**:
-    - **Rôle**: Sert de contrôleur de base pour tous les autres contrôleurs de l'API, standardisant la manière dont les réponses HTTP sont formatées et retournées au client.
-    - **Logique Clé**: Fournit une méthode `ReturnFormattedResponse<T>` qui transforme la `ServiceResponse<T>` interne en une `IActionResult` HTTP standard (e.g., `200 OK`, `404 Not Found`, etc.), assurant une structure JSON de réponse cohérente.
-    - **Fichier**: `CoreServices/CustomerManagement/CBS.CUSTOMER.API/Controllers/Base/BaseController.cs`
+    - **Rôle**: Contrôleur de base pour tous les autres, standardisant le formatage des réponses HTTP.
+    - **Logique Clé**: Fournit une méthode `ReturnFormattedResponse<T>` qui transforme la `ServiceResponse<T>` interne en une `IActionResult` HTTP standard.
 
 ### 2. La Chaîne de Configuration et d'Exécution
 
-L'analyse de `Startup.cs` (`CustomerManagement`) montre un pipeline de middlewares ASP.NET Core bien défini et critique pour la sécurité et la fonctionnalité. L'ordre est le suivant :
-1.  `UseExceptionHandler` / `UseDeveloperExceptionPage`: Gestion des erreurs.
-2.  `UseSwagger` / `UseSwaggerUI`: Exposition de la documentation de l'API.
-3.  `UseHttpsRedirection`: Redirection HTTP vers HTTPS.
-4.  `UseAuthentication`: **Étape cruciale**. Valide le JWT et établit l'identité de l'utilisateur.
-5.  `UseMiddleware<JWTMiddleware>`: **Middleware personnalisé clé**. Placé après l'authentification, son rôle est d'extraire les informations de l'utilisateur du token validé et de peupler l'objet `UserInfoToken` (enregistré en `Scoped`), qui est ensuite utilisé par le `UnitOfWork` pour l'audit.
-6.  `UseAuthorization`: Applique les règles d'autorisation (`[Authorize]`) basées sur l'identité établie précédemment.
-7.  `UseEndpoints`: Envoie la requête au contrôleur approprié.
+`Startup.cs` révèle un pipeline de middlewares critique pour la sécurité :
+1.  `UseExceptionHandler`
+2.  `UseSwagger`
+3.  `UseHttpsRedirection`
+4.  `UseAuthentication`: Valide le JWT.
+5.  `UseMiddleware<JWTMiddleware>`: Middleware personnalisé qui peuple l'objet `UserInfoToken` avec les informations du token validé. C'est le lien entre l'authentification et l'audit.
+6.  `UseAuthorization`: Applique les règles d'autorisation.
+7.  `UseEndpoints`: Envoie la requête au contrôleur.
 
 ### 3. Le Socle de Communication (`Common`)
 
-- **`ApiCallerHelper.cs`**: Un wrapper `HttpClient` standardisé pour la communication inter-services. Il propage automatiquement le JWT de l'utilisateur dans les en-têtes des requêtes sortantes, maintenant ainsi le contexte de sécurité.
-- **`ServiceDiscoveryExtension.cs`**: Contient la logique pour l'intégration avec **Consul**. Sur instruction (`UseConsul`), un service s'enregistre auprès de Consul à son démarrage et se désenregistre à son arrêt, permettant une découverte dynamique des services.
+- **`ApiCallerHelper.cs`**: Wrapper `HttpClient` qui propage automatiquement le JWT de l'utilisateur dans les en-têtes des requêtes inter-services.
+- **`ServiceDiscoveryExtension.cs`**: Contient la logique pour l'intégration avec **Consul** pour l'enregistrement et la découverte de services.
 
 ### 4. Le Portail de Sécurité (`ApiGateway`)
 
-L'analyse de `ocelot.json` révèle que l'ApiGateway agit comme le portail de sécurité central.
-- **Routage**: Il mappe les `UpstreamPathTemplate` (URL publiques) vers les `DownstreamPathTemplate` (services internes).
-- **Authentification Centralisée**: La plupart des routes sont sécurisées avec `"AuthenticationProviderKey": "Bearer"`, forçant la validation JWT à la périphérie de l'écosystème.
-- **Rate Limiting**: Toutes les routes sont protégées contre les abus avec une limite de 100 requêtes par minute.
-- **Contradiction Architecturale**: Bien que la `GlobalConfiguration` de l'ApiGateway soit configurée pour utiliser Consul (`"Type": "Consul"`), les routes individuelles utilisent des adresses de service **statiques et hardcodées** (`DownstreamHostAndPorts`). Cela signifie que, dans la pratique, **la découverte de services dynamique est désactivée au profit d'un routage statique**.
+`ocelot.json` définit l'ApiGateway comme le portail de sécurité central.
+- **Routage**: Mappe les URL publiques aux services internes.
+- **Sécurité Centralisée**: Applique l'authentification JWT, l'autorisation par "claims" et le rate limiting (100 req/min) à la périphérie.
+- **Contradiction Architecturale**: Bien que la configuration globale active Consul pour la découverte de services, les routes individuelles utilisent des adresses de service **statiques et hardcodées**, désactivant de fait la découverte dynamique.
 
 ---
 
 ## Partie II : Dissection Métier de Chaque Microservice
 
 ### 1. `AccountManagement`
-
--   **Rôle Métier Principal**: Le **Grand Livre (General Ledger)** du système. Il est la source de vérité pour toutes les opérations comptables, les soldes, le plan comptable et les rapports financiers.
--   **Entités Clés Gérées**: `Account`, `ChartOfAccount`, `AccountingEntry`, `AccountingRule`, `Transaction`, `Budget`. Prouvé par `CoreServices/AccountManagement/CBS.AccountManagement.Domain/Context/POSContext.cs`.
--   **Logique Métier Spécifique**: Le handler `MakeAccountPostingCommandHandler` contient une logique métier riche. Il orchestre la comptabilisation des transactions en suivant des étapes strictes : vérification d'idempotence, gestion des transactions inter-agences via des comptes de liaison, application de commissions, et surtout, validation de la règle fondamentale de la partie double (`debits == credits`) avant de sauvegarder la transaction de manière atomique.
--   **Interactions (Dépendances Consommées)**: Appelle `IdentityServer` (pour l'authentification), un service d'`AuditTrail`, `BankManagement` (pour les infos sur les agences), et `TransactionManagement` (pour récupérer des détails de transaction).
+-   **Rôle Métier**: Le **Grand Livre (General Ledger)** du système. Source de vérité pour les opérations comptables, soldes, et rapports financiers.
+-   **Entités Clés**: `Account`, `ChartOfAccount`, `AccountingEntry`, `AccountingRule`, `Budget`.
+-   **Logique Spécifique**: `MakeAccountPostingCommandHandler` orchestre la comptabilisation des transactions, incluant la validation de la règle de la partie double (`debits == credits`).
+-   **Dépendances**: `IdentityServer`, `AuditTrail`, `DocumentManagement`, `BankManagement`, `TransactionManagement`, `UserServiceManagement`, `TellerProvisioning`.
 
 ### 2. `BankManagement`
+-   **Rôle Métier**: Référentiel de la **structure organisationnelle et géographique** de la banque.
+-   **Entités Clés**: `Bank`, `Branch`, `BankingZone`, `Country`, `Currency`, `ThirdPartyInstitution`, `DocumentUploaded`.
+-   **Logique Spécifique**: Utilise une **persistance hybride**. La relation entre les agences et les zones (`BankZoneBranch`) est stockée dans **MongoDB**, tandis que le reste est dans SQL Server.
+-   **Dépendances**: `IdentityServer`, `CustomerManagement`.
 
--   **Rôle Métier Principal**: Le référentiel de la **structure organisationnelle et géographique** de la banque.
--   **Entités Clés Gérées**: `Bank`, `Branch`, `BankingZone`, `Country`, `Region`, `Currency`, `ThirdPartyInstitution`. Prouvé par `CoreServices/BankManagement/CBS.BankMGT.Domain/Context/POSContext.cs`.
--   **Logique Métier Spécifique**: L'analyse de `AddBankZoneBranchCommandHandler` révèle une **architecture de persistance hybride**. Alors que certaines données sont dans SQL Server, la relation entre les agences et les zones (`BankZoneBranch`) est stockée dans **MongoDB**. Ce choix a probablement été fait pour des raisons de flexibilité ou de performance.
--   **Interactions (Dépendances Consommées)**: Appelle `IdentityServer` et `CustomerManagement` (pour le notifier après le téléversement d'un document).
+### 3. `BudgetManagement`
+-   **Rôle Métier**: Gestion des **budgets d'entreprise** et suivi des dépenses.
+-   **Entités Clés**: `FiscalYear`, `BudgetPlan`, `BudgetItem`, `Expenditure`, `SpendingLimit`.
+-   **Logique Spécifique**: `AddExpenditureCommandHandler` est étonnamment simple. Il enregistre les dépenses mais **ne valide pas** si elles dépassent le budget alloué, ce qui suggère un système de *suivi* budgétaire plutôt que d'application stricte du budget.
+-   **Dépendances**: `AuditTrail`, `BankManagement`, `DocumentManagement`.
 
-### 3. `CommunicationManagement`
+### 4. `CommunicationManagement`
+-   **Rôle Métier**: Hub centralisé pour l'envoi de **SMS, email, et notifications push**.
+-   **Entités Clés**: Largement sans état. Son `DbContext` SQL ne contient que des `AuditLog`. Utilise **MongoDB** pour persister un journal de chaque `Notification` envoyée.
+-   **Logique Spécifique**: Agit comme une passerelle vers des fournisseurs externes. `SendSingleSmsCommandHandler` contient une logique de **normalisation des numéros de téléphone** (ajout du préfixe `+237`).
+-   **Dépendances**: `IdentityServer`, `AuditTrail`.
 
--   **Rôle Métier Principal**: Hub centralisé pour l'envoi de toutes les communications : **SMS, email, et notifications push**.
--   **Entités Clés Gérées**: Le service est largement sans état. Son `DbContext` SQL ne contient que des `AuditLog`. Cependant, il utilise **MongoDB** pour persister une copie de chaque `Notification` envoyée, servant de journal d'envoi.
--   **Logique Métier Spécifique**: Le `SendSingleSmsCommandHandler` agit comme une passerelle vers un fournisseur SMS externe. Il contient une logique de **normalisation des numéros de téléphone** (ajout du préfixe `+237`) et persiste le résultat de l'envoi (succès/échec) dans la collection `Notification` de MongoDB.
--   **Interactions (Dépendances Consommées)**: Appelle `IdentityServer` et un service d'`AuditTrail`. Sa principale dépendance est le fournisseur SMS externe, dont l'URL est lue depuis la configuration.
+### 5. `CustomerManagement`
+-   **Rôle Métier**: **CRM** et système de gestion des "parties" (individus, groupes, employés).
+-   **Entités Clés**: `Customer`, `Group`, `Organization`, `Employee`, `PhoneNumberChangeHistory`, `UploadedCustomerWithError`.
+-   **Logique Spécifique**: Le `UploadCustomerFileCommandHandler` est un moteur d'importation de données robuste qui utilise `NPOI` pour parser des fichiers Excel, délègue la création via MediatR, et possède une logique de **nettoyage de données et de nouvelles tentatives** en cas d'échec.
+-   **Dépendances**: `IdentityServer`, `AuditTrail`, `AccountManagement`.
+
+### 6. `DailyCollectionManagement`
+-   **Rôle Métier**: Gestion d'un réseau d'agents de collecte.
+-   **Analyse**: Ce service est un **placeholder ou est incomplet**. Il n'a pas de contrôleurs implémentés ni de logique métier significative. Ses entités (`Agent`, etc.) ne sont même pas enregistrées dans son `DbContext`.
+
+### 7. `FixedAssetsManagement`
+-   **Rôle Métier**: Gestion du cycle de vie des **immobilisations** de l'entreprise.
+-   **Entités Clés**: `Asset`, `AssetType`, `Location`, `DepreciationMethod`, `DepreciationEntry`, `AssetTransfer`, `AssetDisposal`.
+-   **Logique Spécifique**: Le `AddDepreciationEntryCommandHandler` **ne calcule pas** la dépréciation. Il reçoit le montant calculé en paramètre. Cela implique que la logique de calcul financier complexe est effectuée par un **processus externe** (par exemple, un batch de fin de mois), et ce service agit comme un simple système d'enregistrement (CRUD).
+-   **Dépendances**: `AuditTrail`, `BankManagement`, `DocumentManagement`.
+
+### 8. `LoanManagement`
+-   **Rôle Métier**: Gestion du cycle de vie complet d'un **prêt**, de la demande à la radiation.
+-   **Entités Clés**: `LoanProduct`, `LoanApplication`, `Loan`, `LoanAmortization`, `Refund`, `LoanCommiteeGroup`, `Collateral`.
+-   **Logique Spécifique**: La logique de calcul financier est encapsulée dans une classe helper statique, `LoanCalculator`. Le `AddLoanAmortizationHandler` délègue à cette classe la tâche complexe de générer le tableau d'amortissement.
+-   **Dépendances**: `AccountManagement`, `CustomerManagement`, `CommunicationManagement`, `IdentityServer`, `AuditTrail`.
+
+### 9. `SystemConfiguration`
+-   **Rôle Métier**: Gestion des **données de référence géographiques** (`Country`, `Region`, `Town`, etc.).
+-   **Logique Spécifique**: Service CRUD simple. Sa "logique" principale réside dans les relations hiérarchiques et les contraintes définies dans `OnModelCreating` de son `DbContext`.
+-   **Dépendances**: `AuditTrail`, `BankManagement`, `TransactionManagement`, `DocumentManagement`.
+
+### 10. `TransactionManagement`
+-   **Rôle Métier**: **Orchestrateur des Opérations Financières**. Il gère le cycle de vie de toutes les transactions (transferts, dépôts, etc.), applique les frais et les politiques.
+-   **Entités Clés**: `Transaction`, `Teller`, `Vault`, `ReversalRequest`, et une multitude d'entités `...Parameter` qui définissent les règles métier (ex: `WithdrawalParameter`).
+-   **Logique Spécifique**: Le `AddRemittanceHandler` est un excellent exemple. Il recherche les politiques de frais, calcule et répartit les commissions entre les agences et le siège social en fonction des pourcentages configurés.
+-   **Dépendances**: `AccountManagement`, `CustomerManagement`, `LoanManagement`, `CommunicationManagement`, `BankManagement`, `IdentityServer`, `AuditTrail`.
+
+### 11. `UserServiceManagement`
+-   **Rôle Métier**: **IAM (Identity and Access Management)** pour les utilisateurs internes (le personnel).
+-   **Entités Clés**: `User` (avec des champs comme `FirstName`, `Email`, `Role`).
+-   **Logique Spécifique**: Service CRUD très simple. L'authentification réelle est déléguée à un `IdentityServer` externe ; ce service agit probablement comme le "magasin d'utilisateurs" pour ce serveur.
+-   **Dépendances**: `AuditTrail`, `BankManagement`, `TransactionManagement`, `DocumentManagement`.
+
 ---
-*Analyse interrompue avant d'avoir pu disséquer les services restants (`CustomerManagement`, `LoanManagement`, etc.) comme prévu.*
+
+## Partie III : Analyse des Synergies et Flux Transversaux
+
+### 1. Cartographie Complète des Interactions
+
+```mermaid
+graph LR
+    subgraph Core Services
+        AccountManagement
+        BankManagement
+        BudgetManagement
+        CustomerManagement
+        FixedAssetsManagement
+        LoanManagement
+        SystemConfiguration
+        TransactionManagement
+        UserServiceManagement
+        CommunicationManagement
+        DailyCollectionManagement
+    end
+
+    subgraph Supporting Services
+        IdentityServer
+        AuditTrailService
+        DocumentManagement
+    end
+
+    AccountManagement --> BankManagement
+    AccountManagement --> TransactionManagement
+    AccountManagement --> UserServiceManagement
+
+    BankManagement --> CustomerManagement
+
+    CustomerManagement --> AccountManagement
+
+    LoanManagement --> AccountManagement
+    LoanManagement --> CustomerManagement
+    LoanManagement --> CommunicationManagement
+    LoanManagement --> TransactionManagement
+
+    TransactionManagement --> AccountManagement
+    TransactionManagement --> CustomerManagement
+    TransactionManagement --> LoanManagement
+    TransactionManagement --> CommunicationManagement
+    TransactionManagement --> BankManagement
+
+    BudgetManagement --> BankManagement
+    FixedAssetsManagement --> BankManagement
+    SystemConfiguration --> BankManagement
+    SystemConfiguration --> TransactionManagement
+    UserServiceManagement --> BankManagement
+    UserServiceManagement --> TransactionManagement
+
+    AccountManagement --> IdentityServer
+    BankManagement --> IdentityServer
+    CommunicationManagement --> IdentityServer
+    CustomerManagement --> IdentityServer
+    LoanManagement --> IdentityServer
+    TransactionManagement --> IdentityServer
+
+    AccountManagement --> AuditTrailService
+    BankManagement --> AuditTrailService
+    BudgetManagement --> AuditTrailService
+    CommunicationManagement --> AuditTrailService
+    CustomerManagement --> AuditTrailService
+    FixedAssetsManagement --> AuditTrailService
+    LoanManagement --> AuditTrailService
+    SystemConfiguration --> AuditTrailService
+    TransactionManagement --> AuditTrailService
+    UserServiceManagement --> AuditTrailService
+
+    AccountManagement --> DocumentManagement
+    BudgetManagement --> DocumentManagement
+    FixedAssetsManagement --> DocumentManagement
+    SystemConfiguration --> DocumentManagement
+    UserServiceManagement --> DocumentManagement
+```
+
+### 2. Analyse d'un Flux Métier Complexe : Création d'un Client
+1.  **ApiGateway** reçoit la requête et la route vers `CustomerManagement`.
+2.  `CustomerManagement` crée l'entité `Customer` dans sa base de données.
+3.  `CustomerManagement` appelle ensuite `AccountManagement` pour créer les comptes financiers par défaut pour ce client.
+4.  `AccountManagement` crée les entités `Account` et les sauvegarde.
+5.  Les deux services enregistrent des logs d'audit dans `AuditTrailService`.
+6.  La réponse finale est retournée au client.
+
+### 3. Le Standard de Contrat de Données (DTOs)
+L'analyse de l'appel de `BankManagement` à `CustomerManagement` prouve l'approche de **copie locale des DTOs**.
+-   `BankManagement` utilise `CoreServices/BankManagement/CBS.BankMGT.Data/APIRequestObjects/CustomerApiRequest.cs`.
+-   `CustomerManagement` reçoit ceci dans un `CoreServices/CustomerManagement/CBS.CUSTOMER.MEDIATR/Global/Command/AddDocumentCommand.cs`.
+-   Les deux classes sont **structurellement identiques**, mais ne sont pas partagées via une librairie commune, ce qui maximise le découplage entre les services.
