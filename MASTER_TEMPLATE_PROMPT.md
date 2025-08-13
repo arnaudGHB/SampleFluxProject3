@@ -1,111 +1,58 @@
-# Directive Maître : Génération d'un Microservice via un Template Configurable (v4 - Master)
+# Directive Maître : Scaffolding d'un Microservice par Duplication (v7 - Master Final)
 
 ## 1. OBJECTIF
 
-Générer la structure complète et le code boilerplate pour un nouveau microservice, en utilisant les paramètres de configuration ci-dessous. Le résultat doit être une solution .NET 8 prête à être compilée et intégrée dans l'écosystème `SampleFluxProject`.
+Ta mission est de **scaffolder** un nouveau microservice en suivant une procédure de **duplication et d'adaptation** stricte. Tu ne dois **rien générer ou créer à partir de zéro**, sauf si explicitement demandé dans la tâche de validation. Tu dois te comporter comme un script automatisé.
 
----
+## 2. SOURCE DE VÉRITÉ
 
-## 2. PARAMÈTRES DE CONFIGURATION
+Le service de référence pour toute duplication est **`CoreServices/TransactionManagement/`**.
 
-*   **`[SERVICE_NAME]`**: Le nom du domaine métier géré par le service (ex: `Portfolio`).
+## 3. PARAMÈTRES DE CONFIGURATION
+
+*   **`[SERVICE_NAME]`**: Le nom du domaine métier (ex: `Portfolio`).
 *   **`[SERVICE_NAME_PLURAL]`**: Le nom au pluriel du domaine (ex: `Portfolios`).
-*   **`[DATABASE_NAME]`**: Le nom de la base de données SQL pour ce service (ex: `CBSPortfolioDB`).
-*   **`[PRIMARY_ENTITY_NAME]`**: Le nom de l'entité principale du service (ex: `Portfolio`).
+*   **`[DATABASE_NAME]`**: Le nom de la base de données SQL (ex: `CBSPortfolioDB`).
+*   **`[PRIMARY_ENTITY_NAME]`**: Le nom de l'entité principale (ex: `Portfolio`).
+*   **`[PRIMARY_ENTITY_NAME_PLURAL]`**: Le nom au pluriel de l'entité (ex: `Portfolios`).
 
 ---
 
-## 3. STRUCTURE ET DÉPENDANCES DE LA SOLUTION
+## 4. PROCESSUS DE SCAFFOLDING EXÉCUTABLE
 
-Génère une solution (`.sln`) avec les 7 projets C# suivants. Chaque projet doit cibler **.NET 8.0** (`<TargetFramework>net8.0</TargetFramework>`).
+### Étape 1 : Duplication de la Structure du Service
+1.  Exécute la commande de copie récursive : `cp -r CoreServices/TransactionManagement CoreServices/[SERVICE_NAME]Management`
+2.  Renomme le répertoire principal du projet API : `mv CoreServices/[SERVICE_NAME]Management/CBS.TransactionManagement.API CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.API`
+3.  Renomme les 6 autres répertoires de projet de la même manière (`.Common`, `.Data`, `.Domain`, `.Helper`, `.MediatR`, `.Repository`).
+4.  Dans chaque répertoire de projet renommé, renomme le fichier `.csproj` correspondant. (ex: `mv CBS.TransactionManagement.API.csproj CBS.[SERVICE_NAME]Management.API.csproj`).
 
-### 1. `CBS.[SERVICE_NAME].API`
--   **Type**: Projet `Microsoft.NET.Sdk.Web`.
--   **Références de Projet**: Doit référencer les 6 autres projets de la solution.
--   **Paquets NuGet**:
-    -   `AutoMapper.Extensions.Microsoft.DependencyInjection` (v12.0.1)
-    -   `FluentValidation.AspNetCore` (v11.3.0)
-    -   `MediatR.Extensions.Microsoft.DependencyInjection` (v11.1.0)
-    -   `Microsoft.AspNetCore.Authentication.JwtBearer` (v7.0.11)
-    -   `Microsoft.EntityFrameworkCore.Design` (v7.0.13)
-    -   `NLog.Web.AspNetCore` (v5.3.5)
-    -   `Swashbuckle.AspNetCore` (v6.5.0)
+### Étape 2 : Adaptation du Contenu des Fichiers
+Pour chaque fichier `.cs` et `.csproj` dans le répertoire `CoreServices/[SERVICE_NAME]Management/`, effectue les opérations de "rechercher-remplacer" suivantes (en respectant la casse) :
 
-### 2. `CBS.[SERVICE_NAME].MediatR`
--   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
--   **Références de Projet**: `.Data`, `.Domain`, `.Repository`.
--   **Paquets NuGet**:
-    -   `AutoMapper` (v12.0.1)
-    -   `FluentValidation` (v11.8.0)
-    -   `MediatR` (v12.1.1)
-    -   `Newtonsoft.Json` (v13.0.3)
+1.  `TransactionManagement` -> `[SERVICE_NAME]Management`
+2.  `TransactionContext` -> `[SERVICE_NAME]Context`
+3.  `Transaction` -> `[PRIMARY_ENTITY_NAME]` (Attention : Remplacer uniquement les instances qui font référence à l'entité `Transaction`, pas le mot commun).
+4.  `Transactions` -> `[PRIMARY_ENTITY_NAME_PLURAL]`
 
-### 3. `CBS.[SERVICE_NAME].Domain`
--   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
--   **Références de Projet**: `.Data`.
--   **Paquets NuGet**:
-    -   `Microsoft.EntityFrameworkCore.SqlServer` (v7.0.13)
+### Étape 3 : Nettoyage et Simplification du Code
+Supprime tous les fichiers de code non essentiels pour ne garder que le boilerplate de base. Exécute les commandes de suppression suivantes :
 
-### 4. `CBS.[SERVICE_NAME].Data`
--   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
--   **Références de Projet**: `.Helper`.
--   **Paquets NuGet**:
-    -   `MediatR` (v12.1.1)
+1.  **Contrôleurs**: `rm -r CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.API/Controllers/*`, puis recrée le dossier `Base` et le fichier `BaseController.cs` en copiant l'original.
+2.  **MediatR**: `rm -r CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.MediatR/*`, puis recrée le dossier `PipeLineBehavior` et le fichier `ValidationBehavior.cs`.
+3.  **Entités**: `rm CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.Data/Entity/*`, puis recrée les fichiers `BaseEntity.cs` et `AuditLog.cs`.
+4.  **DTOs**: `rm CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.Data/Dto/*`, puis recrée le fichier `UserInfoToken.cs`.
+5.  **Repositories**: `rm CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.Repository/*`, puis recrée les implémentations de `GenericRepository.cs` et `UnitOfWork.cs` et leurs interfaces dans `.Common`.
 
-### 5. `CBS.[SERVICE_NAME].Repository`
--   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
--   **Références de Projet**: `.Common`, `.Data`, `.Domain`.
--   **Paquets NuGet**: Aucun.
-
-### 6. `CBS.[SERVICE_NAME].Common`
--   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
--   **Références de Projet**: `.Data`.
--   **Paquets NuGet**:
-    -   `Microsoft.EntityFrameworkCore` (v7.0.13)
-    -   `MongoDB.Driver` (v3.1.0) - *Pour le pattern de persistance hybride.*
-
-### 7. `CBS.[SERVICE_NAME].Helper`
--   **Type**: Bibliothèque de classes `Microsoft.NET.Sdk`.
--   **Références de Projet**: `.Data`, et le projet partagé `CBS.APICaller.Helper`.
--   **Paquets NuGet**:
-    -   `ClosedXML` (v0.102.2)
-    -   `EPPlus` (v7.0.0)
-    -   `Microsoft.AspNetCore.Http.Abstractions` (v2.2.0)
+### Étape 4 : Ajustement Final des Références de Projet
+Dans chaque fichier `*.csproj` du nouveau service, vérifie et corrige les `<ProjectReference>` pour qu'ils pointent vers les nouveaux noms de projet (ex: `<ProjectReference Include="..\CBS.[SERVICE_NAME]Management.Data\CBS.[SERVICE_NAME]Management.Data.csproj" />`).
 
 ---
 
-## 4. FONDATIONS ARCHITECTURALES (CODE BOILERPLATE REQUIS)
+## 5. TÂCHE DE VALIDATION AUTOMATIQUE
 
-Génère les fichiers suivants avec leur logique standard (soft-delete, audit automatique, etc.).
-
--   **Dans `.Data`**:
-    -   `BaseEntity.cs`: Doit contenir `Id`, `CreatedBy`, `CreatedDate`, `ModifiedBy`, `LastModifiedDate`, `IsDeleted`.
--   **Dans `.Helper`**:
-    -   `ServiceResponse<T>`: Implémentation standard avec des méthodes Factory.
-    -   Classes utilitaires standards: `APICallHelper`, `PathHelper`, `BaseUtilities`, `PinSecurity`, `PagedList`, `Enums`.
--   **Dans `.Common`**:
-    -   `IGenericRepository.cs`, `IUnitOfWork.cs`.
-    -   Si persistance hybride : `IMongoUnitOfWork.cs`.
--   **Dans `.Repository` ou `.Common`**:
-    -   `GenericRepository.cs` (avec logique de soft delete).
-    -   `UnitOfWork.cs` (avec logique d'audit dans `SaveChanges()`).
--   **Dans `.API/Controllers/Base`**:
-    -   `BaseController.cs` (avec la méthode `ReturnFormattedResponse`).
--   **Dans `.MediatR/PipeLineBehavior`**:
-    -   `ValidationBehavior.cs` (avec la logique `FluentValidation`).
-
----
-
-## 5. CONFIGURATION `Startup.cs` (API)
-
-Génère un `Startup.cs` qui configure le conteneur DI (via `services.AddDependencyInjection()`) et le pipeline de middlewares dans l'ordre critique : `UseRouting`, `UseAuthentication`, `UseMiddleware<JWTMiddleware>`, `UseMiddleware<AuditLogMiddleware>`, `UseAuthorization`, `UseEndpoints`.
-
----
-
-## 6. TÂCHE DE VALIDATION AUTOMATIQUE
-
-Pour valider le template, génère une fonctionnalité de base pour `[PRIMARY_ENTITY_NAME]` :
-1.  Crée l'entité `public class [PRIMARY_ENTITY_NAME] : BaseEntity`.
-2.  Crée `Add[PRIMARY_ENTITY_NAME]Command` et son `Add[PRIMARY_ENTITY_NAME]CommandHandler`.
-3.  Crée un `[SERVICE_NAME_PLURAL]Controller` avec une action `POST` sécurisée par `[Authorize]`.
-4.  Le test final consiste à appeler cet endpoint avec un token JWT valide et à vérifier que l'entité est créée dans la BDD avec les champs d'audit (`CreatedBy`, `CreatedDate`) correctement renseignés.
+Pour valider le template, implémente une fonctionnalité "Ping" de base :
+1.  **Entité**: Crée le fichier `Ping.cs` dans `.Data/Entity` avec `public class Ping : BaseEntity { public string Message { get; set; } }`.
+2.  **DbContext**: Ajoute `public DbSet<Ping> Pings { get; set; }` au `[SERVICE_NAME]Context.cs`.
+3.  **MediatR**: Crée le dossier `Ping` dans `.MediatR` et y ajoute `AddPingCommand.cs` et `AddPingCommandHandler.cs`. Le handler doit utiliser l'Unit of Work pour sauvegarder l'entité.
+4.  **Contrôleur**: Crée `PingsController.cs` dans `.API/Controllers`, héritant de `BaseController`, avec une action `POST` sécurisée par `[Authorize]` qui déclenche la commande.
+5.  Le test final est de s'assurer que la solution compile sans erreur. L'appel à l'endpoint doit (théoriquement) fonctionner et créer une entrée en base de données avec les champs d'audit corrects.
