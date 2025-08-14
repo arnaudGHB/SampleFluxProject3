@@ -18,7 +18,7 @@ using CBS.ServicesDelivery.Service.ServiceDiscovery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using CBS.CheckManagement.Repository.DatabaseLogging;
+using CBS.CheckManagement.Data;
 using CBS.CheckManagement.Common.DBConnection;
 using Microsoft.AspNetCore.Identity;
 using System.Diagnostics;
@@ -321,20 +321,8 @@ namespace CBS.CheckManagement.API
         options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
 
-            // Retrieve the connection string from the Logging section
-            var connectionStringLogger = Configuration.GetSection("Logging:Database:ConnectionString").Value;
-
-            // Use the retrieved connection string to configure the DbContext
-            services.AddDbContext<TransactionContext>(options =>
-                options.UseSqlServer(connectionStringLogger));
-
-            // Add the custom Database Logger
-            services.AddLogging(loggingBuilder =>
-            {
-                loggingBuilder.AddDbLogger();
-            });
-            var connectionString = Configuration.GetSection("Conn:POSDbConnectionString").Value;
-            services.AddDbContext<TransactionContext>(options => options.UseSqlServer(connectionString));
+            var connectionString = Configuration.GetConnectionString("DefaultConnection");
+            services.AddDbContext<CheckManagementContext>(options => options.UseSqlServer(connectionString));
             // MongoDB Connection String and Database Name
             var mongoConnectionString = Configuration.GetSection("MongoDB").GetSection("DatabaseConnectionString").Value;
             var mongoDatabaseName = Configuration.GetSection("MongoDB").GetSection("DatabaseName").Value;
@@ -404,7 +392,7 @@ namespace CBS.CheckManagement.API
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v1",
-                    Title = "Transaction Management Micro Service API"
+                    Title = "Check Management Micro Service API"
                 });
                 c.AddServer(new OpenApiServer
                 {
@@ -468,7 +456,7 @@ namespace CBS.CheckManagement.API
             app.UseSwaggerUI(c =>
             {
                 c.DefaultModelsExpandDepth(-1);
-                c.SwaggerEndpoint($"v1/swagger.json", "Transaction Management");
+                c.SwaggerEndpoint($"v1/swagger.json", "Check Management");
                 c.RoutePrefix = "swagger";
             });
 
@@ -482,11 +470,8 @@ namespace CBS.CheckManagement.API
             var serviceProvider = app.ApplicationServices;
             using (var scope = serviceProvider.CreateScope())
             {
-                var context = scope.ServiceProvider.GetRequiredService<TransactionContext>();
+                var context = scope.ServiceProvider.GetRequiredService<CheckManagementContext>();
                 context.Database.Migrate();
-                DatabaseInitializerService.Initialize(context);
-                var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
-                loggerFactory.AddProvider(new DatabaseLoggerProvider(context, httpContextAccessor));
             }
             // ✅ Middleware Execution Order Optimized
             app.UseSession(); // Moved higher for better performance 🚀

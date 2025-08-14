@@ -7,20 +7,6 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Controllers\SalaryFiles\**" />
-    <Content Remove="Controllers\SalaryFiles\**" />
-    <EmbeddedResource Remove="Controllers\SalaryFiles\**" />
-    <None Remove="Controllers\SalaryFiles\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="AuditLogMiddleware\AuditLogMiddleware.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Remove="nlog.config" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />
