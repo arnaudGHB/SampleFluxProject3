@@ -2,18 +2,7 @@
 
 Ce document sert à valider que le microservice `CheckManagement` a été généré en stricte conformité avec les directives du **`FINAL_MASTER_PROMPT.md`**.
 
-## 1. Paramètres de Configuration Appliqués
-
-- **`[SERVICE_NAME]`**: `CheckManagement`
-- **`[SERVICE_NAME_LOWER]`**: `checkmanagement`
-- **`[DATABASE_NAME]`**: `CBSCheckManagementDB`
-- **`[PRIMARY_ENTITY_NAME]`**: `CheckManagement`
-- **`[PRIMARY_ENTITY_NAME_PLURAL]`**: `CheckManagements`
-- **`[PORT_NUMBER]`**: (ex: `7115`)
-
----
-
-## 2. Checklist de Conformité Exhaustive
+## 1. Checklist de Conformité Exhaustive
 
 #### **Projet 1 : `CBS.CheckManagementManagement.API`**
 - [ ] **Dossier `AuditLogMiddleware` :**
@@ -50,7 +39,7 @@ Ce document sert à valider que le microservice `CheckManagement` a été géné
 
 ---
 
-## 3. Structure de Fichiers Attendue (Récursive, Finale et Complète)
+## 2. Structure de Fichiers Attendue (Récursive, Finale et Complète)
 
 ```
 CoreServices/CheckManagementManagement/
@@ -103,23 +92,5 @@ CoreServices/CheckManagementManagement/
     ├── Migrations/
     │   └── ...
     └── CBS.CheckManagementManagement.Domain.csproj
-└── CBS.CheckManagementManagement.Helper/
-    ├── Helper/
-    │   └── ServiceResponse.cs
-    └── CBS.CheckManagementManagement.Helper.csproj
-└── CBS.CheckManagementManagement.MediatR/
-    ├── Behaviors/
-    │   └── ValidationBehavior.cs
-    └── CheckManagement/
-        ├── Commands/
-        │   └── CreateCheckManagementCommand.cs
-        ├── Handlers/
-        │   └── CreateCheckManagementCommandHandler.cs
-        └── Validators/
-            └── CreateCheckManagementCommandValidator.cs
-    └── CBS.CheckManagementManagement.MediatR.csproj
-└── CBS.CheckManagementManagement.Repository/
-    ├── ICheckManagementRepository.cs
-    ├── CheckManagementRepository.cs
-    └── CBS.CheckManagementManagement.Repository.csproj
+(et ainsi de suite pour les autres projets...)
 ```
