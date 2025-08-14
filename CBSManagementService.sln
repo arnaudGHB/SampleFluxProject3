@@ -193,6 +193,22 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBS.DailyCollectionManageme
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBS.DailyCollectionManagement.Repository", "CoreServices\DailyCollectionManagement\CBS.DailyCollectionManagement.Repository\CBS.DailyCollectionManagement.Repository.csproj", "{0F03FA6E-2C65-4FC6-9A4D-725EDB96123D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PortfolioManagement", "PortfolioManagement", "{D9FFC8A4-E435-4BA9-8917-AC2049370795}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.API", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.API\CBS.PortfolioManagement.API.csproj", "{3DAEF717-86EC-42B3-BA80-EC70C3ED2CAA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.Common", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.Common\CBS.PortfolioManagement.Common.csproj", "{A4D8DDD9-5650-47FC-AEB1-F30681C061A8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.Data", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.Data\CBS.PortfolioManagement.Data.csproj", "{F12C36B1-6371-4A01-8A98-17A381E9E818}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.Domain", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.Domain\CBS.PortfolioManagement.Domain.csproj", "{8061A527-F255-4774-BB65-919AD52C3FE4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.Helper", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.Helper\CBS.PortfolioManagement.Helper.csproj", "{90562DD7-DE50-44BE-A424-F82D8E12661D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.Repository", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.Repository\CBS.PortfolioManagement.Repository.csproj", "{0F5D0420-E61C-41EC-BCCF-0A7395CEDBDC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CBS.PortfolioManagement.MediatR", "CoreServices\PortfolioManagement\CBS.PortfolioManagement.MediatR\CBS.PortfolioManagement.MediatR.csproj", "{6AC561E1-AFDB-44CC-A08A-883F1499F434}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -499,6 +515,34 @@ Global
 		{0F03FA6E-2C65-4FC6-9A4D-725EDB96123D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F03FA6E-2C65-4FC6-9A4D-725EDB96123D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F03FA6E-2C65-4FC6-9A4D-725EDB96123D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DAEF717-86EC-42B3-BA80-EC70C3ED2CAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DAEF717-86EC-42B3-BA80-EC70C3ED2CAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DAEF717-86EC-42B3-BA80-EC70C3ED2CAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DAEF717-86EC-42B3-BA80-EC70C3ED2CAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4D8DDD9-5650-47FC-AEB1-F30681C061A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4D8DDD9-5650-47FC-AEB1-F30681C061A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4D8DDD9-5650-47FC-AEB1-F30681C061A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4D8DDD9-5650-47FC-AEB1-F30681C061A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F12C36B1-6371-4A01-8A98-17A381E9E818}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F12C36B1-6371-4A01-8A98-17A381E9E818}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F12C36B1-6371-4A01-8A98-17A381E9E818}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F12C36B1-6371-4A01-8A98-17A381E9E818}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8061A527-F255-4774-BB65-919AD52C3FE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8061A527-F255-4774-BB65-919AD52C3FE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8061A527-F255-4774-BB65-919AD52C3FE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8061A527-F255-4774-BB65-919AD52C3FE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90562DD7-DE50-44BE-A424-F82D8E12661D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90562DD7-DE50-44BE-A424-F82D8E12661D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90562DD7-DE50-44BE-A424-F82D8E12661D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90562DD7-DE50-44BE-A424-F82D8E12661D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F5D0420-E61C-41EC-BCCF-0A7395CEDBDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F5D0420-E61C-41EC-BCCF-0A7395CEDBDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F5D0420-E61C-41EC-BCCF-0A7395CEDBDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F5D0420-E61C-41EC-BCCF-0A7395CEDBDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AC561E1-AFDB-44CC-A08A-883F1499F434}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AC561E1-AFDB-44CC-A08A-883F1499F434}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AC561E1-AFDB-44CC-A08A-883F1499F434}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AC561E1-AFDB-44CC-A08A-883F1499F434}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -596,6 +640,13 @@ Global
 		{94A8ED2D-AF12-4C23-A03B-8C91F3410ECF} = {0D41F951-2572-4097-9EED-528A802EF11F}
 		{49AE30A5-D5BE-45EE-8625-26E969BE7936} = {0D41F951-2572-4097-9EED-528A802EF11F}
 		{0F03FA6E-2C65-4FC6-9A4D-725EDB96123D} = {0D41F951-2572-4097-9EED-528A802EF11F}
+		{3DAEF717-86EC-42B3-BA80-EC70C3ED2CAA} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
+		{A4D8DDD9-5650-47FC-AEB1-F30681C061A8} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
+		{F12C36B1-6371-4A01-8A98-17A381E9E818} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
+		{8061A527-F255-4774-BB65-919AD52C3FE4} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
+		{90562DD7-DE50-44BE-A424-F82D8E12661D} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
+		{0F5D0420-E61C-41EC-BCCF-0A7395CEDBDC} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
+		{6AC561E1-AFDB-44CC-A08A-883F1499F434} = {D9FFC8A4-E435-4BA9-8917-AC2049370795}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {784A878A-A303-40C5-B0B0-B522D8AC96F2}
