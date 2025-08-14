@@ -1,0 +1,139 @@
+using CBS.NLoan.Repository.FeePolicyP;
+using CBS.CheckManagement.Common.Repository.Generic;
+using CBS.CheckManagement.Common.Repository.Uow;
+using CBS.CheckManagement.Common.UnitOfWork;
+using CBS.CheckManagement.Data.Entity.DailyStatisticBoard;
+using CBS.CheckManagement.MediatR.AccountMigrationBGService;
+using CBS.CheckManagement.MediatR.BackGroundTasks;
+using CBS.CheckManagement.MediatR.Operations.Cash.CashIn.Services;
+using CBS.CheckManagement.MediatR.Operations.Cash.CashIn.Services.NewFolder;
+using CBS.CheckManagement.MediatR.Operations.Cash.CashIn.Services.RemittanceP;
+using CBS.CheckManagement.MediatR.Operations.Cash.CashOut.Services.NormalCashOutP;
+using CBS.CheckManagement.MediatR.Operations.Cash.CashOut.Services.RemittanceP;
+using CBS.CheckManagement.MediatR.UtilityServices;
+using CBS.CheckManagement.Repository;
+using CBS.CheckManagement.Repository.AccountingDayOpening;
+using CBS.CheckManagement.Repository.AccountServices;
+using CBS.CheckManagement.Repository.CashCeilingMovement;
+using CBS.CheckManagement.Repository.CashOutThirdPartyP;
+using CBS.CheckManagement.Repository.ChargesWaivedP;
+using CBS.CheckManagement.Repository.ClossingOfAccountP;
+using CBS.CheckManagement.Repository.DailyStatisticBoard;
+using CBS.CheckManagement.Repository.FeeP;
+using CBS.CheckManagement.Repository.FileDownloadInfoP;
+using CBS.CheckManagement.Repository.FileUploadP;
+using CBS.CheckManagement.Repository.HolyDayP;
+using CBS.CheckManagement.Repository.HolyDayRecurringP;
+using CBS.CheckManagement.Repository.MemberAccountConfiguration;
+using CBS.CheckManagement.Repository.MemberNoneCashOperationP;
+using CBS.CheckManagement.Repository.MobileMoney;
+using CBS.CheckManagement.Repository.MongoDBManager.SerialNumberGenerator;
+using CBS.CheckManagement.Repository.OldLoanConfiguration;
+using CBS.CheckManagement.Repository.OtherCashIn;
+using CBS.CheckManagement.Repository.Receipts.Details;
+using CBS.CheckManagement.Repository.Receipts.Payments;
+using CBS.CheckManagement.Repository.RemittanceP;
+using CBS.CheckManagement.Repository.ReopenFeeParameterP;
+using CBS.CheckManagement.Repository.ReversalRequestP;
+using CBS.CheckManagement.Repository.SalaryManagement.SalaryAnalysisResultP;
+using CBS.CheckManagement.Repository.SalaryManagement.SalaryFiles;
+using CBS.CheckManagement.Repository.SalaryManagement.SalaryUploadedModelP;
+using CBS.CheckManagement.Repository.SalaryManagement.StandingOrderP;
+using CBS.CheckManagement.Repository.ThirtPartyPayment;
+using CBS.CheckManagement.Repository.VaultAuthorisedPersonP;
+using CBS.CheckManagement.Repository.VaultOperationP;
+using CBS.CheckManagement.Repository.VaultP;
+using CBS.CheckManagement.Repository.WithdrawalNotificationP;
+
+namespace CBS.CheckManagement.API.Helpers
+{
+    public static class DependencyInjectionExtension
+    {
+        public static void AddDependencyInjection(this IServiceCollection services)
+        {
+            services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+            //services.AddScoped(typeof(IDbContextFactory<>), typeof(DbContextFactory<>));
+            services.AddScoped<IMongoUnitOfWork, MongoUnitOfWork>();
+            services.AddScoped(typeof(IMongoGenericRepository<>), typeof(MongoGenericRepository<>));
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<ISavingProductRepository, SavingProductRepository>();
+            services.AddScoped<IDepositLimitRepository, DepositLimitRepository>();
+            services.AddScoped<ITransferLimitsRepository, TransferLimitsRepository>();
+            services.AddScoped<IWithdrawalLimitsRepository, WithdrawalLimitsRepository>();
+            services.AddScoped<IConfigRepository, ConfigRepository>();
+            services.AddScoped<ICurrencyNotesRepository, CurrencyNotesRepository>();
+            services.AddScoped<IConfigRepository, ConfigRepository>();
+            services.AddScoped<ITellerRepository, TellerRepository>();
+            services.AddScoped<IMemberAccountActivationPolicyRepository, MemberAccountActivationPolicyRepository>();
+            services.AddScoped<IOtherTransactionRepository, OtherTransactionRepository>();
+            services.AddScoped<IMemberAccountActivationRepository, MemberAccountActivationRepository>();
+            services.AddScoped<IPrimaryTellerProvisioningHistoryRepository, PrimaryTellerProvisioningHistoryRepository>();
+            services.AddScoped<IDailyTellerRepository, DailyTellerRepository>();
+            services.AddScoped<ISubTellerProvisioningHistoryRepository, SubTellerProvioningHistoryRepository>();
+            services.AddScoped<ITellerOperationRepository, TellerOperationRepository>();
+            services.AddScoped<IAccountingEventRepository, AccountingEventRepository>();
+            services.AddScoped<IEntryFeeParameterRepository, EntryFeeParameterRepository>();
+            services.AddScoped<IManagementFeeParameterRepository, ManagementFeeParameterRepository>();
+            services.AddScoped<IReopenFeeParameterRepository, ReopenFeeParameterRepository>();
+            services.AddScoped<IReversalRequestRepository, ReversalRequestRepository>();
+            services.AddScoped<IPaymentDetailRepository, PaymentDetailRepository>();
+            services.AddScoped<IPaymentReceiptRepository, PaymentReceiptRepository>();
+            services.AddScoped<ITermDepositParameterRepository, TermDepositParameterRepository>();
+            services.AddScoped<ICloseFeeParameterRepository, CloseFeeParameterRepository>();
+            services.AddScoped<ICashReplenishmentRepository, CashReplenishmentRepository>();
+            services.AddScoped<ITransferRepository, TransferRepository>();
+            services.AddScoped<IBlockedAccountRepository, BlockedAccountRepository>();
+            services.AddScoped<IDepositServices, DepositServices>().Reverse();
+            services.AddScoped<ILoanRepaymentServices, LoanRepaymentServices>().Reverse();
+            services.AddScoped<INormalDepositServices, NormalDepositServices>().Reverse();
+            services.AddScoped<ICashCeilingRequestRepository, CashCeilingRequestRepository>().Reverse();
+            services.AddScoped<IMobileMoneyCashTopupRepository, MobileMoneyCashTopupRepository>().Reverse();
+            services.AddScoped<IWithdrawalServices, WithdrawalServices>().Reverse();
+            services.AddScoped<IOldLoanAccountingMapingRepository, OldLoanAccountingMapingRepository>().Reverse();
+            services.AddScoped<ITTPTransferServices, TTPTransferServices>().Reverse();
+            services.AddScoped<IFeeRepository, FeeRepository>();
+            services.AddScoped<IFeePolicyRepository, FeePolicyRepository>();
+            services.AddScoped<ISavingProductFeeRepository, SavingProductFeeRepository>();
+            services.AddScoped<IWithdrawalNotificationRepository, WithdrawalNotificationRepository>();
+            services.AddScoped<IChargesWaivedRepository, ChargesWaivedRepository>();
+            services.AddScoped<IClossingOfAccountRepository, ClossingOfAccountRepository>();
+            services.AddScoped<ICashOutThirdPartyRepository, CashOutThirdPartyRepository>();
+            services.AddScoped<IFileDownloadInfoRepository, FileDownloadInfoRepository>();
+            services.AddScoped<IGimacPaymentRepository, GimacPaymentRepository>();
+            services.AddScoped<IPropertyMappingService, PropertyMappingService>();
+            services.AddScoped<IAccountingDayRepository, AccountingDayRepository>();
+            services.AddScoped<ICashChangeHistoryRepository, CashChangeHistoryRepository>();
+            services.AddScoped<ILoanProcessingFeeServices, LoanProcessingFeeServices>();
+            services.AddScoped<IMomokashCollectionServices, MomokashCollectionServices>();
+            services.AddScoped<IMomokashCollectionLoanRepaymentServices, MomokashCollectionLoanRepaymentServices>();
+            services.AddScoped<IFileUploadRepository, FileUploadRepository>();
+            services.AddScoped<ISalaryExecutedRepository, SalaryProcessingRepository>();
+            services.AddScoped<ILoanRepaymentOperationServices, LoanRepaymentOperationServices>();
+            services.AddScoped<IGeneralDailyDashboardRepository, GeneralDailyDashboardRepository>();
+            services.AddScoped<ICashReplenishmentPrimaryTellerRepository, CashReplenishmentPrimaryTellerRepository>();
+            services.AddScoped<IHolyDayRepository, HolyDayRepository>();
+            services.AddScoped<IHolyDayRecurringRepository, HolyDayRecurringRepository>();
+            services.AddScoped<IRemittanceRepository, RemittanceRepository>();
+            services.AddScoped<IRemittanceCashoutServices, RemittanceCashoutServices>();
+            services.AddScoped<IRemittanceCashInServices, RemittanceCashInServices>();
+            services.AddScoped<INormalCashoutServices, NormalCashoutServices>();
+            services.AddScoped<ISalaryAnalysisResultDetailRepository, SalaryAnalysisResultDetailRepository>();
+            services.AddScoped<ISalaryUploadModelRepository, SalaryUploadModelRepository>();
+            services.AddScoped<IStandingOrderRepository, StandingOrderRepository>();
+            services.AddScoped<ISalaryAnalysisResultRepository, SalaryAnalysisResultRepository>();
+            services.AddScoped<IAPIUtilityServicesRepository, APIUtilityServicesRepository>();
+            services.AddScoped<IVaultRepository, VaultRepository>();
+            services.AddScoped<IVaultOperationRepository, VaultOperationRepository>();
+            services.AddScoped<IVaultAuthorisedPersonRepository, VaultAuthorisedPersonRepository>();
+            services.AddScoped<IDailyTransactionSerialRepository, DailyTransactionSerialRepository>();
+            services.AddScoped<IDailyTransactionCodeGenerator, DailyTransactionCodeGenerator>();
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+            services.AddHostedService<BackgroundWorkerService>();
+            services.AddSingleton<AccountMigrationQueue>(); // ? Register the queue
+            services.AddHostedService<AccountMigrationWorker>(); // ? Background worker for processing queue
+            services.AddScoped<IMemberNoneCashOperationRepository, MemberNoneCashOperationRepository>();
+
+        }
+    }
+}
