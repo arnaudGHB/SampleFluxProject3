@@ -1,58 +1,129 @@
-# Directive Maître : Scaffolding d'un Microservice par Duplication (v7 - Master Final)
+# Directive Maître v4 (Définitive) : Génération d'un Template de Microservice Configurable
 
-## 1. OBJECTIF
+## 1. RÔLE ET MISSION
 
-Ta mission est de **scaffolder** un nouveau microservice en suivant une procédure de **duplication et d'adaptation** stricte. Tu ne dois **rien générer ou créer à partir de zéro**, sauf si explicitement demandé dans la tâche de validation. Tu dois te comporter comme un script automatisé.
+Tu es un **Générateur de Code Expert et un Architecte Logiciel**. Ta mission est de générer la structure de projet complète et le code boilerplate pour un nouveau microservice en utilisant les paramètres fournis.
 
-## 2. SOURCE DE VÉRITÉ
+**Instruction critique :** Pour chaque fichier de code C# généré, tu dois **impérativement adapter les déclarations `namespace` et les directives `using`** pour qu'elles correspondent au nom du service configuré (ex: `CBS.[SERVICE_NAME]Management.API`, `CBS.[SERVICE_NAME]Management.Data`, etc.).
 
-Le service de référence pour toute duplication est **`CoreServices/TransactionManagement/`**.
+Tu dois opérer avec une précision chirurgicale. **Exécute les instructions à la lettre.** Le résultat doit être une solution .NET immédiatement compilable et parfaitement intégrée.
 
-## 3. PARAMÈTRES DE CONFIGURATION
+## 2. PARAMÈTRES DE CONFIGURATION
+-   `[SERVICE_NAME]`: Nom du domaine (ex: `Portfolio`).
+-   `[SERVICE_NAME_LOWER]`: Nom du domaine en minuscules (ex: `portfolio`).
+-   `[DATABASE_NAME]`: Nom de la BDD SQL (ex: `CBS_PortfolioDB`).
+-   `[PRIMARY_ENTITY_NAME]`: Nom de l'entité principale (ex: `PortfolioItem`).
+-   `[PRIMARY_ENTITY_NAME_PLURAL]`: Pluriel de l'entité (ex: `PortfolioItems`).
+-   `[PORT_NUMBER]`: Port HTTP (ex: `7114`).
 
-*   **`[SERVICE_NAME]`**: Le nom du domaine métier (ex: `Portfolio`).
-*   **`[SERVICE_NAME_PLURAL]`**: Le nom au pluriel du domaine (ex: `Portfolios`).
-*   **`[DATABASE_NAME]`**: Le nom de la base de données SQL (ex: `CBSPortfolioDB`).
-*   **`[PRIMARY_ENTITY_NAME]`**: Le nom de l'entité principale (ex: `Portfolio`).
-*   **`[PRIMARY_ENTITY_NAME_PLURAL]`**: Le nom au pluriel de l'entité (ex: `Portfolios`).
+## 3. STRUCTURE ET FONDATIONS (CODE BOILERPLATE)
 
----
+Génère la structure et les fichiers suivants avec leur contenu exact.
 
-## 4. PROCESSUS DE SCAFFOLDING EXÉCUTABLE
+### 3.1. Couche API (`CBS.[SERVICE_NAME]Management.API`)
 
-### Étape 1 : Duplication de la Structure du Service
-1.  Exécute la commande de copie récursive : `cp -r CoreServices/TransactionManagement CoreServices/[SERVICE_NAME]Management`
-2.  Renomme le répertoire principal du projet API : `mv CoreServices/[SERVICE_NAME]Management/CBS.TransactionManagement.API CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.API`
-3.  Renomme les 6 autres répertoires de projet de la même manière (`.Common`, `.Data`, `.Domain`, `.Helper`, `.MediatR`, `.Repository`).
-4.  Dans chaque répertoire de projet renommé, renomme le fichier `.csproj` correspondant. (ex: `mv CBS.TransactionManagement.API.csproj CBS.[SERVICE_NAME]Management.API.csproj`).
+**Structure Complète :**
+```
+CBS.[SERVICE_NAME]Management.API/
+├── AuditLogMiddleware/
+│   └── AuditLogMiddleware.cs
+├── Controllers/
+│   └── BaseController.cs
+├── Helpers/
+│   ├── DependencyResolver/
+│   │   └── DependencyInjectionExtension.cs
+│   ├── MapperConfiguation/
+│   │   └── MapperConfig.cs
+│   ├── ArrayModelBinder.cs
+│   └── UnprocessableEntityObjectResult.cs
+├── JWTTokenValidator/
+│   └── JWTMiddleware.cs
+├── LoggingMiddleWare/
+│   └── RequestResponseLoggingMiddleware.cs
+├── Properties/
+│   └── launchSettings.json
+├── appsettings.json
+├── appsettings.Development.json
+├── nlog.config
+├── Program.cs
+└── Startup.cs
+```
 
-### Étape 2 : Adaptation du Contenu des Fichiers
-Pour chaque fichier `.cs` et `.csproj` dans le répertoire `CoreServices/[SERVICE_NAME]Management/`, effectue les opérations de "rechercher-remplacer" suivantes (en respectant la casse) :
+**Contenu des fichiers :**
 
-1.  `TransactionManagement` -> `[SERVICE_NAME]Management`
-2.  `TransactionContext` -> `[SERVICE_NAME]Context`
-3.  `Transaction` -> `[PRIMARY_ENTITY_NAME]` (Attention : Remplacer uniquement les instances qui font référence à l'entité `Transaction`, pas le mot commun).
-4.  `Transactions` -> `[PRIMARY_ENTITY_NAME_PLURAL]`
+-   **Fichier :** `AuditLogMiddleware/AuditLogMiddleware.cs`
+    ```csharp
+    using CBS.[SERVICE_NAME]Management.Data;
+    using CBS.[SERVICE_NAME]Management.Domain.Context;
+    using System.Text;
 
-### Étape 3 : Nettoyage et Simplification du Code
-Supprime tous les fichiers de code non essentiels pour ne garder que le boilerplate de base. Exécute les commandes de suppression suivantes :
+    namespace CBS.[SERVICE_NAME]Management.API
+    {
+        public class AuditLogMiddleware
+        {
+            private readonly RequestDelegate _next;
+            public AuditLogMiddleware(RequestDelegate next) { _next = next; }
 
-1.  **Contrôleurs**: `rm -r CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.API/Controllers/*`, puis recrée le dossier `Base` et le fichier `BaseController.cs` en copiant l'original.
-2.  **MediatR**: `rm -r CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.MediatR/*`, puis recrée le dossier `PipeLineBehavior` et le fichier `ValidationBehavior.cs`.
-3.  **Entités**: `rm CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.Data/Entity/*`, puis recrée les fichiers `BaseEntity.cs` et `AuditLog.cs`.
-4.  **DTOs**: `rm CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.Data/Dto/*`, puis recrée le fichier `UserInfoToken.cs`.
-5.  **Repositories**: `rm CoreServices/[SERVICE_NAME]Management/CBS.[SERVICE_NAME]Management.Repository/*`, puis recrée les implémentations de `GenericRepository.cs` et `UnitOfWork.cs` et leurs interfaces dans `.Common`.
+            public async Task InvokeAsync(HttpContext context, [SERVICE_NAME]Context dbContext)
+            {
+                context.Request.EnableBuffering();
+                var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
+                context.Request.Body.Position = 0;
 
-### Étape 4 : Ajustement Final des Références de Projet
-Dans chaque fichier `*.csproj` du nouveau service, vérifie et corrige les `<ProjectReference>` pour qu'ils pointent vers les nouveaux noms de projet (ex: `<ProjectReference Include="..\CBS.[SERVICE_NAME]Management.Data\CBS.[SERVICE_NAME]Management.Data.csproj" />`).
+                var auditLog = new AuditLog
+                {
+                    EntityName = context.Request.Path,
+                    Action = context.Request.Method,
+                    Timestamp = DateTime.UtcNow,
+                    Changes = body,
+                    UserId = context.User.Identity?.Name ?? "anonymous",
+                    IPAddress = context.Connection.RemoteIpAddress?.ToString()
+                };
+                dbContext.AuditLogs.Add(auditLog);
+                await dbContext.SaveChangesAsync();
 
----
+                context.Request.Body.Position = 0;
+                await _next(context);
+            }
+        }
+    }
+    ```
+-   **Fichier :** `Startup.cs` (Version finale)
+    ```csharp
+    // ... (Code de Startup.cs qui inclut maintenant le pipeline complet dans Configure) ...
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        // ...
+        app.UseHttpsRedirection();
+        app.UseRouting();
+        app.UseMiddleware<RequestResponseLoggingMiddleware>();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseMiddleware<JWTMiddleware>();
+        app.UseMiddleware<AuditLogMiddleware>(); // <-- Ajout crucial
+        app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+    }
+    ```
+-   **(Les autres fichiers de l'API et des autres couches sont à générer comme défini dans la v3 du prompt)**
 
-## 5. TÂCHE DE VALIDATION AUTOMATIQUE
+### 3.2. Couche Data (`CBS.[SERVICE_NAME]Management.Data`)
+-   **Ajouter `AuditLog.cs`**
+-   **Fichier :** `Data/Entity/AuditLog.cs`
+    ```csharp
+    namespace CBS.[SERVICE_NAME]Management.Data
+    {
+        public class AuditLog : BaseEntity
+        {
+            public int Id { get; set; }
+            public string EntityName { get; set; }
+            public string Action { get; set; }
+            public DateTime Timestamp { get; set; }
+            public string Changes { get; set; }
+            public string UserId { get; set; }
+            public string IPAddress { get; set; }
+        }
+    }
+    ```
+- **DbContext :** Ajouter `public DbSet<AuditLog> AuditLogs { get; set; }` au `[SERVICE_NAME]Context.cs`.
 
-Pour valider le template, implémente une fonctionnalité "Ping" de base :
-1.  **Entité**: Crée le fichier `Ping.cs` dans `.Data/Entity` avec `public class Ping : BaseEntity { public string Message { get; set; } }`.
-2.  **DbContext**: Ajoute `public DbSet<Ping> Pings { get; set; }` au `[SERVICE_NAME]Context.cs`.
-3.  **MediatR**: Crée le dossier `Ping` dans `.MediatR` et y ajoute `AddPingCommand.cs` et `AddPingCommandHandler.cs`. Le handler doit utiliser l'Unit of Work pour sauvegarder l'entité.
-4.  **Contrôleur**: Crée `PingsController.cs` dans `.API/Controllers`, héritant de `BaseController`, avec une action `POST` sécurisée par `[Authorize]` qui déclenche la commande.
-5.  Le test final est de s'assurer que la solution compile sans erreur. L'appel à l'endpoint doit (théoriquement) fonctionner et créer une entrée en base de données avec les champs d'audit corrects.
+**(Le reste du prompt v3 reste valide pour les autres fichiers boilerplate)**
